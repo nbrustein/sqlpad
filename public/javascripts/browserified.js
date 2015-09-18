@@ -89,7 +89,7 @@ module.exports =  {
         return chart;
     }
 };
-},{"lodash":17}],2:[function(require,module,exports){
+},{"lodash":18}],2:[function(require,module,exports){
 var tauCharts = (window.tauCharts);
 var _ = require('lodash');
 var $ = (window.$);
@@ -176,7 +176,7 @@ module.exports =  {
         return chart;
     }
 };
-},{"lodash":17}],3:[function(require,module,exports){
+},{"lodash":18}],3:[function(require,module,exports){
 var tauCharts = (window.tauCharts);
 var _ = require('lodash');
 var $ = (window.$);
@@ -275,7 +275,7 @@ module.exports =  {
         return chart;
     }
 };
-},{"lodash":17}],4:[function(require,module,exports){
+},{"lodash":18}],4:[function(require,module,exports){
 var tauCharts = (window.tauCharts);
 var _ = require('lodash');
 
@@ -378,7 +378,7 @@ module.exports =  {
         return chart;
     }
 };
-},{"lodash":17}],5:[function(require,module,exports){
+},{"lodash":18}],5:[function(require,module,exports){
 var $ = (window.$);
 var ace = (window.ace);
 
@@ -673,7 +673,7 @@ var ChartEditor = function () {
 };
 module.exports = ChartEditor;
 
-},{"./chart-type-bar-horizontal.js":1,"./chart-type-bar-vertical":2,"./chart-type-line.js":3,"./chart-type-scatterplot":4,"lodash":17}],7:[function(require,module,exports){
+},{"./chart-type-bar-horizontal.js":1,"./chart-type-bar-vertical":2,"./chart-type-line.js":3,"./chart-type-scatterplot":4,"lodash":18}],7:[function(require,module,exports){
 var $ = (window.$);
 var Slick = (window.Slick);
 var moment = require('moment');
@@ -778,7 +778,7 @@ module.exports = function () {
     
     $(window).resize(me.resize);
 };
-},{"moment":18}],8:[function(require,module,exports){
+},{"moment":19}],8:[function(require,module,exports){
 /*
 
  "component" for db schema info
@@ -973,6 +973,161 @@ module.exports = function () {
     });
 };
 },{}],12:[function(require,module,exports){
+var $ = (window.$);
+var keymaster = require('keymaster');
+var ChartEditor = require('./component-chart-editor.js');
+var DbInfo = require('./component-db-info.js');
+var AceSqlEditor = require('./component-ace-sql-editor.js');
+var DataGrid = require('./component-data-grid.js');
+
+var DashboardEditor = function () {
+    var chartEditor = new ChartEditor();
+    var dbInfo = new DbInfo();
+    var dataGrid = new DataGrid();
+    
+    function getDashboardName () {
+        return $('#header-dashboard-name').val();
+    }
+    
+    function getDashboardTags () {
+        return $.map($('#tags').val().split(','), $.trim);
+    }
+
+    function getQueries() {
+        $('#query-select').html('');
+        $.ajax({
+            type: "GET",
+            url: "/queries?format=json" 
+        }).done(function (data) {
+            $('#query-select').html('');
+            data.forEach(function(query) {
+                var option = $('<option value="'+query._id+'">'+query.name+'</option>');
+                $('#query-select').append(option);
+            });
+        }).fail(function(){
+            alert('Failed to load queries');
+        });
+    }
+    
+    function saveDashboard () {
+        var $dashboardId = $('#dashboard-id');
+        var dashboard = {
+            name: getDashboardName(),
+            tags: getDashboardTags(),
+            chartConfiguration: chartEditor.getChartConfiguration()
+        };
+        $('#btn-save-result').text('saving...').show();
+        $.ajax({
+            type: "POST",
+            url: "/dashboards/" + $dashboardId.val(),
+            data: dashboard
+        }).done(function (data) {
+            if (data.success) {
+                window.history.replaceState({}, "dashboard " + data.dashboard._id, "/dashboards/" + data.dashboard._id);
+                $dashboardId.val(data.dashboard._id);
+                $('#btn-save-result').removeClass('label-info').addClass('label-success').text('Success');
+                setTimeout(function () {
+                    $('#btn-save-result').fadeOut(400, function () {
+                        $('#btn-save-result').removeClass('label-success').addClass('label-info').text('');
+                    });
+                }, 1000);
+            } else {
+                $('#btn-save-result').removeClass('label-info').addClass('label-danger').text('Failed');
+            }
+        }).fail(function () {
+            alert('ajax fail');
+        });
+    }
+    
+    $('#btn-save-dashboard').click(function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        saveDashboard();
+    });
+
+    $('#add-query-form').submit(function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        var select = $(event.target['query']);
+        var queryId = select.val();
+        $(select).find('option[value="'+queryId+'"]').remove();
+        alert('Figure out how to add '+queryId);
+    });
+    
+    // /*  (re-)render the chart when the viz tab is pressed, 
+    //     TODO: only do this if necessary
+    // ==============================================================================*/
+    // $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    //     // if shown tab was the chart tab, rerender the chart
+    //     // e.target is the activated tab
+    //     if (e.target.getAttribute("href") == "#tab-content-visualize") {
+    //         chartEditor.rerenderChart();
+    //     } else if (e.target.getAttribute("href") == "#tab-content-sql") {
+    //         dataGrid.resize();
+    //     }
+    // });
+    
+    /*  get dashboard again, because not all the data is in the HTML
+        TODO: do most the workflow this way? 
+    ==============================================================================*/
+    var $dashboardId = $('#dashboard-id');
+    $.ajax({
+        type: "GET",
+        url: "/dashboards/" + $dashboardId.val() + "?format=json"
+    }).done(function (data) {
+        //chartEditor.loadChartConfiguration(data.chartConfiguration);
+    }).fail(function () {
+        alert('Failed to get additional Dashboard info');
+    });
+    
+    /*  Tags Typeahead
+    ==============================================================================*/
+    var Bloodhound = (window.Bloodhound);
+    var bloodhoundTags = new Bloodhound({
+      datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+      queryTokenizer: Bloodhound.tokenizers.whitespace,
+      prefetch: {
+        url: '/tags', // array of tagnames
+        ttl: 0,
+        filter: function(list) {
+          return $.map(list, function(tag) {
+            return { name: tag }; });
+        }
+      }
+    });
+    bloodhoundTags.initialize();
+    $('#tags').tagsinput({
+      typeaheadjs: {
+        //name: 'tags',
+        displayKey: 'name',
+        valueKey: 'name',
+        source: bloodhoundTags.ttAdapter()
+      }
+    });
+    
+    /*  Shortcuts
+    ==============================================================================*/
+    // keymaster doesn't fire on input/textarea events by default
+    // since we are only using command/ctrl shortcuts, 
+    // we want the event to fire all the time for any element
+    keymaster.filter = function (event) {
+        return true; 
+    };
+    keymaster('ctrl+s, command+s', function() { 
+        saveDashboard();
+        return false;
+    });
+
+    getQueries();
+};
+
+
+module.exports = function () {
+    if ($('#dashboard-editor').length) {
+        new DashboardEditor();
+    }
+};
+},{"./component-ace-sql-editor.js":5,"./component-chart-editor.js":6,"./component-data-grid.js":7,"./component-db-info.js":8,"keymaster":17}],13:[function(require,module,exports){
 //  This is where all the client side js stuff is required so it can be bundled 
 //  via Browserify. 
 //  All the heavy old-school javascript libraries are exposed as browserify globals
@@ -992,7 +1147,10 @@ require('./query-filter-form.js')();
 
 // All the stuff that happens when viewing/working with a single query happens here
 require('./query-editor.js')();
-},{"./configs.js":9,"./connection-admin.js":10,"./connection.js":11,"./query-editor.js":13,"./query-filter-form.js":14,"./user-admin.js":15}],13:[function(require,module,exports){
+
+// All the stuff that happens when viewing/working with a single dashboard happens here
+require('./dashboard-editor.js')();
+},{"./configs.js":9,"./connection-admin.js":10,"./connection.js":11,"./dashboard-editor.js":12,"./query-editor.js":14,"./query-filter-form.js":15,"./user-admin.js":16}],14:[function(require,module,exports){
 var $ = (window.$);
 var keymaster = require('keymaster');
 var ChartEditor = require('./component-chart-editor.js');
@@ -1171,7 +1329,7 @@ module.exports = function () {
         new QueryEditor();
     }
 };
-},{"./component-ace-sql-editor.js":5,"./component-chart-editor.js":6,"./component-data-grid.js":7,"./component-db-info.js":8,"keymaster":16}],14:[function(require,module,exports){
+},{"./component-ace-sql-editor.js":5,"./component-chart-editor.js":6,"./component-data-grid.js":7,"./component-db-info.js":8,"keymaster":17}],15:[function(require,module,exports){
 var $ = (window.$);
 
 module.exports = function () {
@@ -1201,7 +1359,7 @@ module.exports = function () {
         }
     });
 }
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var $ = (window.$);
 
 module.exports = function () {
@@ -1215,7 +1373,7 @@ module.exports = function () {
         }
     });
 }
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 //     keymaster.js
 //     (c) 2011-2013 Thomas Fuchs
 //     keymaster.js may be freely distributed under the MIT license.
@@ -1513,7 +1671,7 @@ module.exports = function () {
 
 })(this);
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -8303,7 +8461,7 @@ module.exports = function () {
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 (function (global){
 //! moment.js
 //! version : 2.8.4
@@ -11243,4 +11401,4 @@ module.exports = function () {
 }).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[12]);
+},{}]},{},[13]);

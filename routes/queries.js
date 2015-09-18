@@ -84,6 +84,9 @@ module.exports = function (app) {
                     queries: queries,
                     filter: filter
                 });
+            } else if (req.query && req.query.format && req.query.format === 'json') {
+                // send JSON of query objects
+                res.json(queries);
             } else {
                 res.render('queries', {
                     pageTitle: "Queries",
@@ -91,6 +94,8 @@ module.exports = function (app) {
                     filter: filter
                 });
             }
+
+
 
         });
     });

@@ -97,13 +97,13 @@ module.exports = function(app) {
             //dashboards = _.sortBy(dashboards, 'timeDiff');
             if (req.dashboard && req.dashboard.format && req.dashboard.format === "table-only") {
                 res.render('dashboards-table', {
-                    pageTitle: "Queries",
+                    pageTitle: "Dashboards",
                     dashboards: dashboards,
                     filter: filter
                 });
             } else {
                 res.render('dashboards', {
-                    pageTitle: "Queries",
+                    pageTitle: "Dashboards",
                     dashboards: dashboards,
                     filter: filter
                 });
@@ -178,9 +178,6 @@ module.exports = function(app) {
         var bodyDashboard = {
             name: req.body.name || "No Name Dashboard",
             tags: req.body.tags,
-            connectionId: req.body.connectionId,
-            dashboardText: req.body.dashboardText,
-            chartConfiguration: req.body.chartConfiguration,
             modifiedDate: new Date(),
             modifiedBy: req.user.email,
             lastAccessedDate: new Date()

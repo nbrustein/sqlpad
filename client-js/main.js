@@ -17,3 +17,6 @@ require('./query-filter-form.js')();
 
 // All the stuff that happens when viewing/working with a single query happens here
 require('./query-editor.js')();
+
+// All the stuff that happens when viewing/working with a single dashboard happens here
+require('./dashboard-editor.js')();
