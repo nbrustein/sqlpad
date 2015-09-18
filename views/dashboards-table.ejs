@@ -1,0 +1,39 @@
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Tags</th>
+                            <th>Created By</th>
+                            <!--<th>Accessed</th>-->
+                            <th>Modified</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% for (var i=0; i<dashboards.length; i++) {
+                            var dashboard = dashboards[i];
+                        %>
+                            <tr>
+                                <td><a href="/dashboards/<%= dashboard._id %>"><%= dashboard.name %></a></td>
+                                <td>
+                                    <% for (var t = 0; t < dashboard.tags.length; t++) { %>
+                                        <a class="tag label label-info" href="/dashboards?tag=<%= dashboard.tags[t] %>"><%= dashboard.tags[t] %></a>
+                                    <% } %>    
+                                </td>
+                                <td><%= (dashboard.createdBy && dashboard.createdBy == user.email ? "Me" : (dashboard.createdBy || "")) %></td>
+                                <!--<td><%= dashboard.lastAccessedFromNow || "" %></td>-->
+                                <td><%= dashboard.modifiedCalendar %></td>
+                                <td>
+                                    <form role="form" class="form-delete-dashboard" action="/dashboards/<%= dashboard._id %>" method="post">
+                                        <input type="hidden" name="_method" value="delete" />
+                                        <button class="btn btn-default btn-sm" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>    
+                            
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>

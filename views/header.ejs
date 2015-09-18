@@ -38,6 +38,8 @@
               <ul class="nav navbar-nav">
                 <li class="<%= (pageTitle && pageTitle == "Queries" ? "active" : "") %>"><a href="/queries?createdBy=<%= encodeURIComponent(user.email) %>">Queries</a></li>
                 <li><a href="/queries/new">New Query</a></li>
+                <li class="<%= (pageTitle && pageTitle == "Dashboard" ? "active" : "") %>"><a href="/dashboards?createdBy=<%= encodeURIComponent(user.email) %>">Dashboard</a></li>
+                <li><a href="/dashboards/new">New Dashboard</a></li>
                 <% if (isAuthenticated && user.admin) { %>
                 <li class="<%= (pageTitle && pageTitle == "Connections" ? "active" : "") %>"><a href="/connections">Connections</a></li>
                 <li class="<%= (pageTitle && pageTitle == "Users" ? "active" : "") %>"><a href="/users">Users</a></li>
